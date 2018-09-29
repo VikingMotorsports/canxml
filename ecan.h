@@ -235,7 +235,8 @@ struct ecan_adapter {
 	uint8_t dma_tx_channel;
 	uint8_t dma_rx_channel;
 
-	uint16_t *buffer;
+	// this is a bit bizzare, but it allows us to user 2d array syntax
+	uint16_t (*buffer)[8];
 };
 
 struct ecan_baud_cfg {

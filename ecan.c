@@ -1,8 +1,9 @@
 #include "ecan.h"
+#include <xc.h>
 
 int dma_setup_rx(struct ecan_adapter *adapter)
 {
-	void *bp = adapter->dma_base + 16 * adapter->dma_tx_channel;
+	void *bp = adapter->dma_base + 16 * adapter->dma_rx_channel;
 	uint16_t dmaicon = 0;
 	uint16_t dmaireq = 0;
 	uint16_t dmaicnt = 7;
@@ -72,6 +73,9 @@ int ecan_init(struct ecan_adapter *adapter, struct ecan_baud_cfg *cicfg)
 	// make sure WIN=0
 	cictrl1 = readw(bp + CiCTRL1);
 	cictrl1 &= ~CiCTRL1_WIN_MASK;
+
+	// select clock source (when at 30mips)
+	cictrl1 |= CiCTRL1_CANCKS_MASK;
 	writew(cictrl1, bp + CiCTRL1);
 
 	// write the baud rate configuration
@@ -87,10 +91,12 @@ int ecan_init(struct ecan_adapter *adapter, struct ecan_baud_cfg *cicfg)
 	// set normal mode
 	cictrl1 = readw(bp + CiCTRL1);
 	cictrl1 &= ~CiCTRL1_REQOP_MASK;
+	//cictrl1 |= 2 << CiCTRL1_REQOP_SHIFT; // set loopback for testing
 	writew(cictrl1, bp + CiCTRL1);
 
 	// wait for the mode change to take effect
 	while (((readw(bp + CiCTRL1) & CiCTRL1_OPMODE_MASK) >> CiCTRL1_OPMODE_SHIFT) != 0);
+	//while (((readw(bp + CiCTRL1) & CiCTRL1_OPMODE_MASK) >> CiCTRL1_OPMODE_SHIFT) != 2);
 
 	dma_setup_tx(adapter);
 	dma_setup_rx(adapter);
@@ -101,12 +107,28 @@ int ecan_write_baud_cfg(struct ecan_baud_cfg *cicfg)
 {
 	uint16_t cicfg1 = 0;
 	uint16_t cicfg2 = 0;
-
+	
+	// using 10 time quanta per bit
+	// synchronization segment is 1TQ
+	// phase segment 2 is 3TQ
+	// propagation segment is 3TQ
+	// phase segment 1 is 3TQ
+	// Fp = 30000000
+	// Fcan = 60000000
+	// Ftq = 125000 * 10 = 1250000
+	// Fbrp = 1250000 * 2 = 2500000
+	// Fp / Fbrp = 600/25 = 24
+	// BRP = Fp / Fbrp - 1 = 24 - 1 = 23
+	
 	cicfg1 |= 2 << CiCFG1_SJW_SHIFT;
-	cicfg1 |= (31 << CiCFG1_BRP_SHIFT) & CiCFG1_BRP_MASK;
-	cicfg2 |= 1 << CiCFG2_PRSEG_SHIFT;
-	cicfg2 |= 1 << CiCFG2_SEG1PH_SHIFT;
-	cicfg2 |= 1 << CiCFG2_SEG2PH_SHIFT;
+	cicfg1 |= (23 << CiCFG1_BRP_SHIFT) & CiCFG1_BRP_MASK;
+	// PRSEG + 1 = propagation segment bits
+	cicfg2 |= 2 << CiCFG2_PRSEG_SHIFT;
+	// SEG1PH + 1 = phase segment 1 bits
+	cicfg2 |= 2 << CiCFG2_SEG1PH_SHIFT;
+	// SEG2PH + 1 = phase segment 2 bits
+	cicfg2 |= 2 << CiCFG2_SEG2PH_SHIFT;
+	// yes, I want to set phase segment 2
 	cicfg2 |= CiCFG2_SEG2PHTS_MASK;
 
 	cicfg->cicfg1 = cicfg1;
@@ -206,6 +228,22 @@ int ecan_set_mask(struct ecan_adapter *adapter, int m, uint16_t id_mask)
 
 int ecan_broadcast(struct ecan_adapter *adapter, struct ecan_message *message)
 {
+	uint16_t citr01con;
+	void *bp = adapter->ecan_base;
+
+	// write a fixed message for testing
+	adapter->buffer[0][0] = 0x123C;
+	adapter->buffer[0][1] = 0x0000;
+	adapter->buffer[0][2] = 0x0008;
+	adapter->buffer[0][3] = 0x0123;
+	adapter->buffer[0][4] = 0x4567;
+	adapter->buffer[0][5] = 0x89ab;
+	adapter->buffer[0][6] = 0xcdef;
+
+	citr01con = readw(bp + CiTRmnCON);
+	citr01con |= CiTRmnCON_TXREQ_MASK;
+	writew(citr01con, bp + CiTRmnCON);
+
 	return 0;
 }
 
