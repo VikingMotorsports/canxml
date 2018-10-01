@@ -226,28 +226,66 @@ int ecan_set_mask(struct ecan_adapter *adapter, int m, uint16_t id_mask)
 	return 0;
 }
 
-int ecan_broadcast(struct ecan_adapter *adapter, struct ecan_message *message)
+int ecan_broadcast(struct ecan_adapter *adapter, struct ecan_message *m)
 {
+	int i;
 	uint16_t citr01con;
 	void *bp = adapter->ecan_base;
 
-	// write a fixed message for testing
-	adapter->buffer[0][0] = 0x123C;
-	adapter->buffer[0][1] = 0x0000;
-	adapter->buffer[0][2] = 0x0008;
-	adapter->buffer[0][3] = 0x0123;
-	adapter->buffer[0][4] = 0x4567;
-	adapter->buffer[0][5] = 0x89ab;
-	adapter->buffer[0][6] = 0xcdef;
+	// non-blocking check that the buffer is ready
+	if (readw(bp + CiTRmnCON) & CiTRmnCON_TXREQ_MASK) {
+		return 0;
+	}
+    
+	// clear the non-data words
+	adapter->buffer[0][0] = 0x0;
+	adapter->buffer[0][1] = 0x0;
+	adapter->buffer[0][2] = 0x0;
+	adapter->buffer[0][7] = 0x0;
+
+	// write the identifier
+	adapter->buffer[0][0] |= (m->sid << BUFFER_SID_SHIFT) & BUFFER_SID_MASK;
+	// write the data length code
+	adapter->buffer[0][2] |= m->length & 0xF;
+
+	// write the data
+	for (i = 0; i < m->length; ++i) {
+		adapter->buffer[0][i + 3] = m->data[i];
+	}
 
 	citr01con = readw(bp + CiTRmnCON);
 	citr01con |= CiTRmnCON_TXREQ_MASK;
 	writew(citr01con, bp + CiTRmnCON);
 
-	return 0;
+	return 1;
 }
 
-int ecan_read(struct ecan_adapter *adapter, struct ecan_message *message)
+
+int ecan_read(struct ecan_adapter *adapter, struct ecan_message *m)
 {
+	int i;
+	uint16_t cififo;
+	uint16_t fnrb;
+	void *bp = adapter->ecan_base;
+
+	cififo = readw(bp + CiFIFO);
+	fnrb = (cififo & CiFIFO_FNRB_MASK) >> CiFIFO_FNRB_SHIFT;
+	if (read_register_bitset(bp + CiRXFULn, fnrb)) {
+		// read the identifier
+		m->sid = (adapter->buffer[0][0] & BUFFER_SID_MASK) >> BUFFER_SID_SHIFT;
+		// read the data length code
+		m->length = (uint8_t)(adapter->buffer[0][2] & 0xF);
+
+		// read the data
+		for (i = 0; i < m->length; ++i) {
+			m->data[i] = adapter->buffer[0][i + 3];
+		}
+
+		// TODO: handle overflow condition (for logging statistics, if nothing else)
+		clear_register_bitset(bp + CiRXFULn, fnrb);
+
+		return 1;
+	}
+
 	return 0;
 }

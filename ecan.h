@@ -42,8 +42,8 @@ enum {
 	CiFIFO_FNRB_SHIFT = 0,
 	CiFIFO_FBP_SHIFT = 8
 };
-#define CiFIFO_FNRB_MASK (0x3FUL << CiFCTRL_FNRB_SHIFT)
-#define CiFIFO_FBP_MASK (0x3FUL << CiFCTRL_FBP_SHIFT)
+#define CiFIFO_FNRB_MASK (0x3FUL << CiFIFO_FNRB_SHIFT)
+#define CiFIFO_FBP_MASK (0x3FUL << CiFIFO_FBP_SHIFT)
 
 #define CiINTF  0x0A
 enum {
@@ -166,6 +166,9 @@ enum {
 #define CiRXnSID_EXIDE_MASK BIT(CiRXnSID_EXIDE_SHIFT)
 #define CiRXnSID_EID_MASK   (0x3UL << CiRXnSID_EID_SHIFT)
 
+#define BUFFER_SID_SHIFT 2
+#define BUFFER_SID_MASK (0x7FFUL << BUFFER_SID_SHIFT)
+
 // DMA
 
 #define DMASTRIDE 0x10
@@ -221,9 +224,9 @@ enum {
 		__attribute__((aligned(ECAN_NUM_BUFFERS * 16)));
 
 struct ecan_message {
-	uint8_t node;
-	uint8_t address;
+	uint16_t sid;
 	uint16_t data[4];
+	uint8_t length;
 };
 
 struct ecan_adapter {
@@ -235,7 +238,8 @@ struct ecan_adapter {
 	uint8_t dma_tx_channel;
 	uint8_t dma_rx_channel;
 
-	// this is a bit bizzare, but it allows us to user 2d array syntax
+	// this is a bit bizzare, but it allows us to 
+	// pass a pointer and still use 2d array syntax
 	uint16_t (*buffer)[8];
 };
 
@@ -264,6 +268,18 @@ static inline void writew(const uint16_t val, volatile void *addr)
 	*((volatile uint16_t *)addr) = val;
 }
 
+static inline int read_register_bitset(uint16_t *base, int index)
+{
+	return (readw(base + (index >> 4)) >> (index & 0x15)) & 1;
+}
+
+static inline void clear_register_bitset(uint16_t *base, int index)
+{
+	uint16_t word = readw(base + (index >> 4));
+	word &= ~(1UL << (index & 0x15));
+	writew(word, base + (index >> 4));
+}
+
 int ecan_init(struct ecan_adapter *adapter, struct ecan_baud_cfg *cxcfg);
 
 int ecan_write_baud_cfg(struct ecan_baud_cfg *cxcfg);
@@ -272,6 +288,10 @@ int ecan_set_filter(struct ecan_adapter *adapter, int n, uint16_t id, int m);
 
 int ecan_set_mask(struct ecan_adapter *adapter, int m, uint16_t id_mask);
 
-int ecan_broadcast(struct ecan_adapter *adapter, struct ecan_message *message);
+// ecan_broadcast - non-blocking CAN message transmit.
+// returns the number of messages transmitted (0 or 1)
+int ecan_broadcast(struct ecan_adapter *adapter, struct ecan_message *m);
 
-int ecan_read(struct ecan_adapter *adapter, struct ecan_message *message);
+// ecan_read - non-blocking CAN message receive
+// returns the number of messages received (0 or 1)
+int ecan_read(struct ecan_adapter *adapter, struct ecan_message *m);
