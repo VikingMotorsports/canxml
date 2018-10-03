@@ -206,27 +206,17 @@ enum {
 #define DMAiPAD  0x0C
 #define DMAiCNT  0x0E
 
-#define DMAPWC 0xF0
-#define DMARQC 0xF2
-#define DMAPPS 0xF4
-
-#define DMALCA 0xF6
-enum {
-	DMALCA_LSTCH_SHIFT = 0
-};
-#define DMALCA_LSTCH_MASK (0xFUL << DMALCA_LSTCH_SHIFT)
-
-#define DSADRL 0xF8
-#define DSADRH 0xFA
-
 #define ECAN_NUM_BUFFERS 8
 #define ECAN_DECLARE_BUFFER(name) uint16_t name[ECAN_NUM_BUFFERS][8] \
 		__attribute__((aligned(ECAN_NUM_BUFFERS * 16)));
 
 struct ecan_message {
 	uint16_t sid;
-	uint16_t data[4];
-	uint8_t length;
+	union {
+		uint8_t data_bytes[8];
+		uint16_t data_words[4];
+	};
+	uint8_t dlc;
 };
 
 struct ecan_adapter {
@@ -270,13 +260,12 @@ static inline void writew(const uint16_t val, volatile void *addr)
 
 static inline int read_register_bitset(uint16_t *base, int index)
 {
-	return (readw(base + (index >> 4)) >> (index & 0x15)) & 1;
+	return (readw(base + (index >> 4)) >> (index & 0xFF)) & 1;
 }
 
 static inline void clear_register_bitset(uint16_t *base, int index)
 {
-	uint16_t word = readw(base + (index >> 4));
-	word &= ~(1UL << (index & 0x15));
+	uint16_t word = ~(1UL << (index & 0xFF));
 	writew(word, base + (index >> 4));
 }
 

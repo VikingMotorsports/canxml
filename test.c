@@ -42,6 +42,8 @@ int main()
 {
 	struct ecan_adapter can1;
 	struct ecan_baud_cfg cfg;
+	struct ecan_message test_tx_message;
+	struct ecan_message test_rx_message;
 
 	// Configure PLL for desired clock frequency
 	// Fosc = Fin * M / (N1 * N2), Fcy = Fosc / 2
@@ -95,7 +97,6 @@ int main()
 	ODCBbits.ODCB14 = 0; // normal digital output
 	ODCBbits.ODCB11 = 0; // normal digital output
 
-
 	// start timer2
 	T2CONbits.TCS = 0;
 	T2CONbits.T32 = 0;
@@ -104,6 +105,7 @@ int main()
 	T2CONbits.TCKPS = 0x3;
 	T2CONbits.TON = 1;
 
+	// initialize the CAN adapter
 	can1.ecan_base = (void *)CAN0_BASE_ADDRESS;
 	can1.dma_base = (void *)DMA_BASE_ADDRESS;
 	can1.tx_irq = 70;
@@ -114,14 +116,20 @@ int main()
 
 	ecan_write_baud_cfg(&cfg);
 	ecan_init(&can1, &cfg);
+	ecan_set_mask(&can1, 0, 0x0000);
+	ecan_set_filter(&can1, 0, 0, 0);
+	
+	test_tx_message.sid = 0x123;
+	test_tx_message.data_words[0] = 0x0123;
+	test_tx_message.data_words[1] = 0x4567;
+	test_tx_message.data_words[2] = 0x89ab;
+	test_tx_message.data_words[3] = 0xcdef;
+	test_tx_message.dlc = 8;
 
-	//while (DMA0PAD != (uint16_t)(&C1TXD));
-	//LATBbits.LATB0 = 1;
 	for (;;) {
 		TMR2 = 0;
-		while (TMR2 < 58594);
-		ecan_broadcast(&can1, 0);
-		while (C1TR01CONbits.TXREQ0 == 1);
+		//while (TMR2 < 58594);
+		while (ecan_read(&can1, &test_rx_message) == 0);
 		LATBbits.LATB0 = ~LATBbits.LATB0;
 	}
 

@@ -58,7 +58,7 @@ int ecan_init(struct ecan_adapter *adapter, struct ecan_baud_cfg *cicfg)
 	void *bp = adapter->ecan_base;
 	
 	uint16_t cictrl1;
-	uint16_t cifctrl = 0xC01F; // just for testing
+	uint16_t cifctrl = 0xC001; // just for testing
 	uint16_t citrmncon = 0;
 
 	// set configuration mode
@@ -215,7 +215,7 @@ int ecan_set_mask(struct ecan_adapter *adapter, int m, uint16_t id_mask)
 	writew(ctrl, bp + CiCTRL1);
 
 	// write the mask
-	writew(id_mask << CiRXnSID_SID_SHIFT, sid_reg_ptr);	
+	writew((id_mask << CiRXnSID_SID_SHIFT) & CiRXnSID_SID_MASK, sid_reg_ptr);	
 	writew(0x0, sid_reg_ptr+2);	// zero the EID register
 
 	// set WIN=0
@@ -246,11 +246,11 @@ int ecan_broadcast(struct ecan_adapter *adapter, struct ecan_message *m)
 	// write the identifier
 	adapter->buffer[0][0] |= (m->sid << BUFFER_SID_SHIFT) & BUFFER_SID_MASK;
 	// write the data length code
-	adapter->buffer[0][2] |= m->length & 0xF;
+	adapter->buffer[0][2] |= m->dlc & 0xF;
 
 	// write the data
-	for (i = 0; i < m->length; ++i) {
-		adapter->buffer[0][i + 3] = m->data[i];
+	for (i = 0; i < (m->dlc+1)/2; ++i) {
+		adapter->buffer[0][i+3] = m->data_words[i];
 	}
 
 	citr01con = readw(bp + CiTRmnCON);
@@ -259,7 +259,6 @@ int ecan_broadcast(struct ecan_adapter *adapter, struct ecan_message *m)
 
 	return 1;
 }
-
 
 int ecan_read(struct ecan_adapter *adapter, struct ecan_message *m)
 {
@@ -270,15 +269,16 @@ int ecan_read(struct ecan_adapter *adapter, struct ecan_message *m)
 
 	cififo = readw(bp + CiFIFO);
 	fnrb = (cififo & CiFIFO_FNRB_MASK) >> CiFIFO_FNRB_SHIFT;
+
 	if (read_register_bitset(bp + CiRXFULn, fnrb)) {
 		// read the identifier
-		m->sid = (adapter->buffer[0][0] & BUFFER_SID_MASK) >> BUFFER_SID_SHIFT;
+		m->sid = (adapter->buffer[fnrb][0] & BUFFER_SID_MASK) >> BUFFER_SID_SHIFT;
 		// read the data length code
-		m->length = (uint8_t)(adapter->buffer[0][2] & 0xF);
+		m->dlc = (uint8_t)(adapter->buffer[fnrb][2] & 0xF);
 
 		// read the data
-		for (i = 0; i < m->length; ++i) {
-			m->data[i] = adapter->buffer[0][i + 3];
+		for (i = 0; (m->dlc+1)/2; ++i) {
+			m->data_bytes[i] = adapter->buffer[fnrb][i+3];
 		}
 
 		// TODO: handle overflow condition (for logging statistics, if nothing else)
@@ -286,6 +286,6 @@ int ecan_read(struct ecan_adapter *adapter, struct ecan_message *m)
 
 		return 1;
 	}
-
+	
 	return 0;
 }
