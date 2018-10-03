@@ -1,5 +1,7 @@
+#include "mmio.h"
 #include "ecan.h"
-#include <xc.h>
+#include "ecan_registers.h"
+#include "dma_registers.h"
 
 int dma_setup_rx(struct ecan_adapter *adapter)
 {
@@ -144,7 +146,6 @@ int ecan_set_filter(struct ecan_adapter *adapter, int n, uint16_t id, int m)
 	void *bp; // ecan module base pointer
 
 	// local register copies
-	uint16_t sid_reg; // filter identifier register
 	uint16_t msksel_reg; // mask selection register
 	uint16_t fbp_reg; // filter buffer pointer register
 	uint16_t fen_reg; // filter enable register pointer

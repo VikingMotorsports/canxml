@@ -1,7 +1,8 @@
-#include <xc.h>
 #include <stdint.h>
 
+#include "mmio.h"
 #include "ecan.h"
+#include <xc.h>
 
 #define CAN0_BASE_ADDRESS 0x400
 #define DMA_BASE_ADDRESS  0xB00
