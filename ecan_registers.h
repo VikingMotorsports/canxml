@@ -169,3 +169,5 @@ enum {
 #define BUFFER_SID_MASK (0x7FFUL << BUFFER_SID_SHIFT)
 
 #endif // ECAN_REGISTERS_H
+
+
