@@ -37,6 +37,8 @@
 #pragma config GCP =      OFF
 #pragma config GWRP =     OFF
 
+#define ct_assert(e) ((void)sizeof(char[1 - 2*!(e)]))
+
 ECAN_DECLARE_BUFFER(can1buffer)
 
 int main()
