@@ -36,4 +36,31 @@ static inline void clear_register_bitset(uint16_t *base, int index)
 	writew(word, base + (index >> 4));
 }
 
+
+// Inline assembly functions to ensure atomic memory access when necessary.
+
+static inline void 
+__attribute__((always_inline)) atomic_xor(uint16_t mask, volatile uint16_t *addr)
+{
+	__asm__ __volatile__ (" xor %1, [%2], [%0] " : "=r"(addr) : "r"(mask), "0"(addr));
+}
+
+static inline void 
+__attribute__((always_inline)) atomic_or(uint16_t mask, volatile uint16_t *addr)
+{
+	__asm__ __volatile__ (" or %1, [%2], [%0] " : "=r"(addr) : "r"(mask), "0"(addr));
+}
+
+static inline void 
+__attribute__((always_inline)) atomic_and(uint16_t mask, volatile uint16_t *addr)
+{
+	__asm__ __volatile__ (" and %1, [%2], [%0] " : "=r"(addr) : "r"(mask), "0"(addr));
+}
+
+static inline void 
+__attribute__((always_inline)) atomic_add(uint16_t mask, volatile uint16_t *addr)
+{
+	__asm__ __volatile__ (" add %1, [%2], [%0] " : "=r"(addr) : "r"(mask), "0"(addr));
+}
+
 #endif // MMIO_H
