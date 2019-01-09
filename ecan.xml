@@ -1,0 +1,82 @@
+<?xml version="1.0" ?>
+<!--
+
+Valid Identifiers (to be checked for mistakes by script):
+module
+register
+field
+value
+desc
+address
+start
+end
+type
+stride
+instance
+device
+array
+
+
+Other Notes:
+
+Fields of type "bool" are C booleans, which are really just ints (and therefore could have more than one bit).
+
+The templating script should check for unrecognized identifiers.
+The templating script should check that start <= end.
+
+A rational stride in a register array (e.g. 1/16 for a bitfield) means 
+that multiple elements of the array are packed in a single register.
+
+Register arrays consist of a list of fields and a list of named registers in the array.
+Each register in the array has the fields of the array. The stride of the array is in
+units of whole registers. The length is determined by the number of named registers listed.
+
+Boolean bitmaps are simply register arrays with a one-bit bool field.
+
+Should descriptions be elements instead of attributes in some cases?
+
+For the sake of simplicity and sanity, no special handling of fields split between registers is planned.
+-->
+
+<module name="ECAN">
+    <register name="CiCFG1" desc="ECAN Baud Rate Configuration Register 1" address="0x0">
+        <field name="SJW" desc="Synchronization Jump Width" start="6" end="7" type="uint">
+            <value name="4TQ" value="0x3"/>
+            <value name="3TQ" value="0x2"/>
+            <value name="2TQ" value="0x1"/>
+            <value name="1TQ" value="0x0"/>
+        </field>
+        <field name="BRP" desc="Baud Rate Prescaler" start="0" end="5" type="uint"/>
+    </register>
+
+    <array name="CiFEN1" desc="Acceptance Filter Enable Register" address="0x14" stride="1/16">
+        <field name="FLTEN" desc="Enable Filter" start="1" end="1" type="bool"/>
+        <register name="CiFEN1"/>
+    </array>
+
+    <array name="CiRXFnSID" desc="Acceptance Filter Standard Identifier Register" address="0x40" stride="2">
+        <field name="SID" desc="Standard Identifier" start="5" end="15" type="uint"/>
+        <field name="EXIDE" desc="Extended Identifier Enable" start="3" end="3" type="bool"/>
+        <field name="EID" desc="Extended Identifier high bits" start="0" end="1" type="uint"/>
+        <register name="CiRXF0SID"/>
+        <register name="CiRXF1SID"/>
+        <register name="CiRXF2SID"/>
+        <register name="CiRXF3SID"/>
+        <register name="CiRXF4SID"/>
+        <register name="CiRXF5SID"/>
+        <register name="CiRXF6SID"/>
+        <register name="CiRXF7SID"/>
+        <register name="CiRXF8SID"/>
+        <register name="CiRXF9SID"/>
+        <register name="CiRXF10SID"/>
+        <register name="CiRXF11SID"/>
+        <register name="CiRXF12SID"/>
+        <register name="CiRXF13SID"/>
+        <register name="CiRXF14SID"/>
+        <register name="CiRXF15SID"/>
+    </array>
+</module>
+
+<device name="dsPIC33EPXXXGP50X">
+    <instance name="ECAN1" module="ECAN" address="0x400"/>
+</device>
