@@ -37,7 +37,7 @@ static inline void clear_register_bitset(uint16_t *base, int index)
 }
 
 
-// Inline assembly functions to ensure atomic memory access when necessary.
+// Inline assembly functions to ensure atomic memory access with pointers.
 
 static inline void 
 __attribute__((always_inline)) atomic_xor(uint16_t mask, volatile uint16_t *addr)
