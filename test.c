@@ -5,7 +5,7 @@
 #include "ecan.h"
 #include <xc.h>
 
-#define CAN0_BASE_ADDRESS 0x400
+#define CAN1_BASE_ADDRESS 0x400
 #define DMA_BASE_ADDRESS  0xB00
 
 // FICD
@@ -45,7 +45,6 @@ ECAN_DECLARE_BUFFER(can1buffer)
 int main()
 {
 	struct ecan_adapter can1;
-	struct ecan_baud_cfg cfg;
 	struct ecan_message test_tx_message;
 	struct ecan_message test_rx_message;
 
@@ -77,19 +76,18 @@ int main()
 	T2CONbits.TON = 1;
 
 	// initialize the CAN adapter
-	can1.ecan_base = (void *)CAN0_BASE_ADDRESS;
-	can1.dma_base = (void *)DMA_BASE_ADDRESS;
-	can1.tx_irq = 70;
-	can1.rx_irq = 34;
-	can1.dma_tx_channel = 0;
-	can1.dma_rx_channel = 1;
 	can1.buffer = can1buffer;
 
-	ecan_write_baud_cfg(&cfg);
-	ecan_init(&can1, &cfg);
-	ecan_set_mask(&can1, 0, 0x0000);
-	ecan_set_filter(&can1, 0, 0, 0);
-	
+	ecan_init(&can1);
+    C1RXM0SID = 0x0000;
+    C1RXM0EID = 0;
+
+    C1FEN1bits.FLTEN0 = 1;
+    C1RXF0SID = 0x0000;
+    C1RXF0EID = 0;
+    C1FMSKSEL1bits.F0MSK = 0;
+    C1BUFPNT1bits.F0BP = 0xF;
+
 	test_tx_message.sid = 0x123;
 	test_tx_message.data_words[0] = 0x0123;
 	test_tx_message.data_words[1] = 0x4567;

@@ -17,28 +17,14 @@ struct ecan_message {
 };
 
 struct ecan_adapter {
-	void *ecan_base;
-	uint8_t tx_irq;
-	uint8_t rx_irq;
-
-	void *dma_base;
-	uint8_t dma_tx_channel;
-	uint8_t dma_rx_channel;
-
 	// this is a bit bizzare, but it allows us to 
 	// pass a pointer and still use 2d array syntax
 	uint16_t (*buffer)[8];
 };
 
-struct ecan_baud_cfg {
-	uint16_t cicfg1;
-	uint16_t cicfg2;
-};
+int ecan_init(struct ecan_adapter *adapter);
 
-
-int ecan_init(struct ecan_adapter *adapter, struct ecan_baud_cfg *cxcfg);
-
-int ecan_write_baud_cfg(struct ecan_baud_cfg *cxcfg);
+int ecan_write_baud_cfg();
 
 int ecan_set_filter(struct ecan_adapter *adapter, int n, uint16_t id, int m);
 
