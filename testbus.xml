@@ -1,0 +1,214 @@
+<?xml version="1.0" ?>
+<!--
+
+Valid Identifiers (to be checked for mistakes by script):
+
+Other Notes:
+
+signals of type "bool" are C booleans, which are really just ints (and therefore could have more than one bit).
+
+The templating script should check for unrecognized identifiers.
+The templating script should check that start <= end.
+
+Should descriptions be elements instead of attributes in some cases?
+
+The "len" attribute of a message is optional. It is intended for cases where signal information is missing or there is
+padding at the end of the message.
+
+-->
+
+<bus name="Test_Bus">
+    <node name="PM100">
+        <publish>
+            PM100_Temperatures_1
+            PM100_Analog_Input_Voltages
+            PM100_Digital_Input_Status
+            PM100_Internal_Voltages
+            PM100_Internal_States
+            PM100_Fault_Codes
+            PM100_Firmware_Information
+        </publish>
+
+        <subscribe>
+            PM100_Command_Message
+            PM100_Read_Write_Parameter_Command
+            PM100_Read_Write_Parameter_Response
+        </subscribe>
+    </node>
+
+    <node name="Test_A">
+        <publish>
+            PM100_Command_Message
+            CAN_Test_Message
+        </publish>
+
+        <subscribe>
+            PM100_Temperatures_1
+            PM100_Analog_Input_Voltages
+            PM100_Internal_States
+            PM100_Fault_Codes
+            PM100_Firmware_Information
+            CAN_Test_Message
+        </subscribe>
+    </node>
+
+    <node name="Test_B">
+        <publish>
+            PM100_Command_Message
+            CAN_Test_Message
+        </publish>
+
+        <subscribe>
+            PM100_Temperatures_1
+            PM100_Analog_Input_Voltages
+            PM100_Internal_States
+            PM100_Fault_Codes
+            PM100_Firmware_Information
+            CAN_Test_Message
+        </subscribe>
+    </node>
+
+    <message name="CAN_Test_Message" id="0x12">
+        <signal name="SignalA" sbit="1" len="5" type="uint"/>
+        <signal name="SignalB" sbit="6" len="16" type="uint"/>
+        <signal name="SignalC" start="2" sbit="6" len="10" type="uint"/>
+        <signal name="SignalD" start="4" len="8" type="bool"/>
+        <signal name="SignalE" start="5" len="24" type="uint"/>
+    </message>
+    
+    <message name="PM100_Temperatures_1" id="0xA0">
+        <signal name="Module_A_Temperature" start="0" len="16" type="uint"/>
+        <signal name="Module_B_Temperature" start="2" len="16" type="uint"/>
+        <signal name="Module_C_Temperature" start="4" len="16" type="uint"/>
+        <signal name="Gate_Driver_Board_Temperature" start="6" len="16" type="uint"/>
+    </message>
+
+    <messsage name="PM100_Analog_Input_Voltages" id="0xA3">
+        <signal name="Analog_Input_1" sbit="0" len="10" type="uint"/>
+        <signal name="Analog_Input_2" sbit="10" len="10" type="uint"/>
+        <signal name="Analog_Input_3" sbit="20" len="10" type="uint"/>
+        <signal name="Analog_Input_4" sbit="32" len="10" type="uint"/>
+        <signal name="Analog_Input_5" sbit="42" len="10" type="uint"/>
+        <signal name="Analog_Input_6" sbit="52" len="10" type="uint"/>
+    </message>
+
+    <message name="PM100_Digital_Input_Status" id="0xA4">
+        <signal name="Digital_Input_1" start="0" len="8" type="bool"/>
+        <signal name="Digital_Input_2" start="1" len="8" type="bool"/>
+        <signal name="Digital_Input_3" start="2" len="8" type="bool"/>
+        <signal name="Digital_Input_4" start="3" len="8" type="bool"/>
+        <signal name="Digital_Input_5" start="4" len="8" type="bool"/>
+        <signal name="Digital_Input_6" start="5" len="8" type="bool"/>
+        <signal name="Digital_Input_7" start="6" len="8" type="bool"/>
+        <signal name="Digital_Input_8" start="7" len="8" type="bool"/>
+    </message>
+
+    <message name="PM100_Internal_Voltages" id="0xA9">
+        <signal name="1_5V_Reference_Voltage" start="0" len="16" type="uint"/>
+        <signal name="2_5V_Reference_Voltage" start="2" len="16" type="uint"/>
+        <signal name="5_0V_Reference_Voltage" start="4" len="16" type="uint"/>
+        <signal name="12V_System_Voltage" start="6" len="16" type="uint"/>
+    </message>
+
+    <message name="PM100_Internal_States" id="0xAA">
+        <signal name="VSM_State" start="0" len="16" type="uint">
+            <value name="Start"               value="0"/>
+            <value name="Pre-charge_Init"     value="1"/>
+            <value name="Pre-charge_Active"   value="2"/>
+            <value name="Pre-charge_Complete" value="3"/>
+            <value name="VSM_Wait"            value="4"/>
+            <value name="VSM_Ready"           value="5"/>
+            <value name="Motor_Running"       value="6"/>
+            <value name="Blink_Fault_Code"    value="7"/>
+            <value name="Shutdown_In_Process" value="14"/>
+            <value name="Recycle_Power"       value="15"/>
+        </signal>
+        <signal name="Inverter_State" start="2" len="8" type="uint">
+            <value name="Power_On"    value="0"/>
+            <value name="Stop"        value="1"/>
+            <value name="Open_Loop"   value="2"/>
+            <value name="Closed_Loop" value="3"/>
+            <value name="Wait"        value="4"/>
+            <value name="Internal_5"  value="5"/>
+            <value name="Internal_6"  value="6"/>
+            <value name="Internal_7"  value="7"/>
+            <value name="Idle_Run"    value="8"/>
+            <value name="Idle_Stop"   value="9"/>
+            <value name="Internal_10" value="10"/>
+            <value name="Internal_11" value="11"/>
+            <value name="Internal_12" value="12"/>
+        </signal>
+        <signal name="Relay_1_Status" start="3" sbit="0" len="1" type="bool"/>
+        <signal name="Relay_2_Status" start="3" sbit="1" len="1" type="bool"/>
+        <signal name="Relay_3_Status" start="3" sbit="2" len="1" type="bool"/>
+        <signal name="Relay_4_Status" start="3" sbit="3" len="1" type="bool"/>
+        <signal name="Relay_5_Status" start="3" sbit="4" len="1" type="bool"/>
+        <signal name="Relay_6_Status" start="3" sbit="5" len="1" type="bool"/>
+        <signal name="Inverter_Run_Mode" start="4" sbit="0" len="1" type="uint">
+            <value name="Torque_Mode" value="0"/>
+            <value name="Speed_Mode" value="1"/>
+        </signal>
+        <signal name="Inverter_Active_Discharge_State" start="4" sbit="5" len="4" type="uint">
+            <value name="Discharge_Disabled"        value="0"/>
+            <value name="Discharge_Enabled_Waiting" value="1"/>
+            <value name="Performing_Speed_Check"    value="2"/>
+            <value name="Discharge_Occurring"       value="3"/>
+            <value name="Discharge_Completed"       value="4"/>
+        </signal>
+        <signal name="Inverter_Command_Mode" start="5" len="8" type="uint">
+            <value name="CAN_Mode" value="0"/>
+            <value name="VSM_Mode" value="1"/>
+        </signal>
+        <signal name="Inverter_Enable_State" start="6" sbit="0" len="1" type="uint"/>
+        <signal name="Inverter_Enable_Lockout" start="6" sbit="7" len="1" type="uint">
+            <value name="Enable_Unlocked" value="0"/>
+            <value name="Enable_Locked"   value="1"/>
+        </signal>
+        <signal name="Direction_Command" start="7" len="8" type="uint">
+            <value name="State_Reverse" value="0"/>
+            <value name="State_Forward" value="1"/>
+        </signal>
+    </message>
+
+    <message name="PM100_Fault_Codes" id="0xAB">
+        <signal name="POST_Fault_Lo" start="0" len="16" type="uint"/>
+        <signal name="POST_Fault_Hi" start="2" len="16" type="uint"/>
+        <signal name="Run_Fault_Lo" start="4" len="16" type="uint"/>
+        <signal name="Run_Fault_Hi" start="6" len="16" type="uint"/>
+    </message>
+
+    <message name="PM100_Firmware_Information" id="0xAE">
+        <signal name="EEPROM_Version_Project_Code" start="0" len="16" type="uint"/>
+        <signal name="Software_Version" start="2" len="16" type="uint"/>
+        <signal name="Date_Code_MMDD" start="4" len="16" type="uint"/>
+        <signal name="Date_Code_YYYY" start="6" len="16" type="uint"/>
+    </message>
+
+    <message name="PM100_Command_Message" id="0xC0">
+        <signal name="Torque_Command" start="0" len="16" type="uint"/>
+        <signal name="Speed_Command" start="2" len="16" type="uint"/>
+        <signal name="Direction_Command" start="4" len="8" type="uint">
+            <value name="Command_Reverse" value="0"/>
+            <value name="Command_Forward" value="1"/>
+        </signal>
+        <signal name="PM100_Inverter_Enable" start="5" sbit="0" len="1" type="bool">
+        <signal name="Inverter_Discharge" start="5" sbit="1" len="1" type="bool"/>
+        <signal name="Speed_Mode_Enable" start="5" sbit="2" len="1" type="bool"/>
+        <signal name="Commanded_Torque_Limit" start="6" len="16" type="uint"/>
+    </message>
+
+    <message name="PM100_Read_Write_Parameter_Command" len="8" id="0xC1">
+        <signal name="Parameter_Address" start="0" len="16" type="uint"/>
+        <signal name="RW_Command" start="2" len="8" type="uint">
+            <value name="Parameter_Read"  value="0"/>
+            <value name="Parameter_Write" value="1"/>
+        </signal>
+        <signal name="Data" start="4" len="16" type="uint"/>
+    </message>
+
+    <message name="PM100_Read_Write_Parameter_Response" len="8" id="0xC2">
+        <signal name="Parameter_Address" start="0" len="16" type="uint"/>
+        <signal name="Write_Success" start="2" len="8" type="bool"/>
+        <signal name="Data" start="4" len="16" type="uint"/>
+    </message>
+</bus>

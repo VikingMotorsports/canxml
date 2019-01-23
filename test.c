@@ -2,10 +2,9 @@
 
 #include "mmio.h"
 #include "oscconfig.h"
-#include "ecan.h"
+#include "testbus_test_a.h"
 #include <xc.h>
 
-#define CAN1_BASE_ADDRESS 0x400
 #define DMA_BASE_ADDRESS  0xB00
 
 // FICD
@@ -40,14 +39,8 @@
 
 #define ct_assert(e) ((void)sizeof(char[1 - 2*!(e)]))
 
-ECAN_DECLARE_BUFFER(can1buffer)
-
 int main()
 {
-	struct ecan_adapter can1;
-	struct ecan_message test_tx_message;
-	struct ecan_message test_rx_message;
-
 	osccon_frc30mips();
 
 	// configure I/O pins
@@ -75,10 +68,6 @@ int main()
 	T2CONbits.TCKPS = 0x3;
 	T2CONbits.TON = 1;
 
-	// initialize the CAN adapter
-	can1.buffer = can1buffer;
-
-	ecan_init(&can1);
     C1RXM0SID = 0x0000;
     C1RXM0EID = 0;
 
@@ -88,17 +77,9 @@ int main()
     C1FMSKSEL1bits.F0MSK = 0;
     C1BUFPNT1bits.F0BP = 0xF;
 
-	test_tx_message.sid = 0x123;
-	test_tx_message.data_words[0] = 0x0123;
-	test_tx_message.data_words[1] = 0x4567;
-	test_tx_message.data_words[2] = 0x89ab;
-	test_tx_message.data_words[3] = 0xcdef;
-	test_tx_message.dlc = 8;
-
 	for (;;) {
 		TMR2 = 0;
-		//while (TMR2 < 58594);
-		while (ecan_read(&can1, &test_rx_message) == 0);
+		while (TMR2 < 58594);
 		LATBbits.LATB0 = ~LATBbits.LATB0;
 	}
 
