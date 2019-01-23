@@ -13,7 +13,8 @@
 
 // configure PLL for 30Mips (60Mhz clock) operation with the
 // 7.37Mhz FRC oscillator
-void osccon_frc30mips() {
+void
+osccon_frc30mips() {
 	// Configure PLL for desired clock frequency
 	// Fosc = Fin * M / (N1 * N2), Fcy = Fosc / 2
 	// Fvco = Fin * M / N1, 120 < Fvco < 340
@@ -40,7 +41,8 @@ void osccon_frc30mips() {
 
 // configure PLL for 60Mips (120Mhz clock) operation with the
 // 7.37Mhz FRC oscillator
-void osccon_frc60mips() {
+void
+osccon_frc60mips() {
 	// Configure PLL for desired clock frequency
 	// Fosc = Fin * M / (N1 * N2), Fcy = Fosc / 2
 	// Fvco = Fin * M / N1, 120 < Fvco < 340

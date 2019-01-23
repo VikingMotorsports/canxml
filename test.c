@@ -39,7 +39,8 @@
 
 #define ct_assert(e) ((void)sizeof(char[1 - 2*!(e)]))
 
-int main()
+int
+main()
 {
 	osccon_frc30mips();
 

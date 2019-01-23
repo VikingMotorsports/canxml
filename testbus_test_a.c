@@ -1,13 +1,12 @@
 #include "mmio.h"
 #include "ecan.h"
-#include "ecan_registers.h"
-#include "dma_registers.h"
+#include "testbus_test_a.h"
 #include <xc.h>
 
-#define CAN1_BASE_ADDRESS 0x400
+ECAN_DECLARE_BUFFER(testbus_buffer)
 
-int
-dma_setup_rx(struct ecan_adapter *adapter)
+static int
+testbus_dma_setup_rx()
 {
     // Disable channel and start configuration
     DMA0CON = 0 | (0x2 << 4);
@@ -16,7 +15,7 @@ dma_setup_rx(struct ecan_adapter *adapter)
 	DMA0REQ = 34;
     DMA0CNT = 7;
     DMA0PAD = (uint16_t)(&C1RXD);
-    DMA0STAL = (uint16_t)adapter->buffer;
+    DMA0STAL = (uint16_t)testbus_buffer;
     DMA0STAH = 0;
 
     // Enable channel 
@@ -25,8 +24,8 @@ dma_setup_rx(struct ecan_adapter *adapter)
 	return 0;
 }
 
-int
-dma_setup_tx(struct ecan_adapter *adapter)
+static int
+testbus_dma_setup_tx()
 {
     // Disable channel and start configuration
     DMA1CON = 0 | (0x2 << 4) | (1 << 13);
@@ -35,7 +34,7 @@ dma_setup_tx(struct ecan_adapter *adapter)
 	DMA1REQ = 70;
     DMA1CNT = 7;
     DMA1PAD = (uint16_t)(&C1TXD);
-    DMA1STAL = (uint16_t)adapter->buffer;
+    DMA1STAL = (uint16_t)testbus_buffer;
     DMA1STAH = 0;
 
     // Enable channel 
@@ -44,8 +43,8 @@ dma_setup_tx(struct ecan_adapter *adapter)
 	return 0;
 }
 
-int
-ecan_write_baud_cfg()
+static int
+testbus_set_speed(enum ecan_speed cfg)
 {
 	// using 10 time quanta per bit
 	// synchronization segment is 1TQ
@@ -58,30 +57,38 @@ ecan_write_baud_cfg()
 	// Fbrp = 1250000 * 2 = 2500000
 	// Fp / Fbrp = 600/25 = 24
 	// BRP = Fp / Fbrp - 1 = 24 - 1 = 23
-	
-    C1CFG1bits.SJW = 2;
-    C1CFG1bits.BRP = 23;
-	// PRSEG + 1 = propagation segment bits
-    C1CFG2bits.PRSEG = 2;
-	// SEG1PH + 1 = phase segment 1 bits
-    C1CFG2bits.SEG1PH = 2;
-	// SEG2PH + 1 = phase segment 2 bits
-    C1CFG2bits.SEG2PH = 2;
-	// yes, I want to set phase segment 2
-    C1CFG2bits.SEG2PHTS = 1;
+    
+    if (cfg == ECAN_125KBPS) {
+        C1CFG1bits.SJW = 2;
+        C1CFG1bits.BRP = 23;
+        // PRSEG + 1 = propagation segment bits
+        C1CFG2bits.PRSEG = 2;
+        // SEG1PH + 1 = phase segment 1 bits
+        C1CFG2bits.SEG1PH = 2;
+        // SEG2PH + 1 = phase segment 2 bits
+        C1CFG2bits.SEG2PH = 2;
+        // yes, I want to set phase segment 2
+        C1CFG2bits.SEG2PHTS = 1;
 
-	return 0;
+        return 0;
+    }
+
+	return -1;
 }
 
-
 int
-ecan_init(struct ecan_adapter *adapter)
+testbus_init(enum ecan_speed speed, enum ecan_mode mode)
 {
 	// set configuration mode
-    C1CTRL1bits.REQOP = 4;
-
+    C1CTRL1bits.REQOP = ECAN_CONFIG;
 	// wait for the mode change to take effect
-    while (C1CTRL1bits.OPMODE != 4);
+    while (C1CTRL1bits.OPMODE != ECAN_CONFIG);
+
+    // Configure DMA channels to match
+	testbus_dma_setup_tx();
+	testbus_dma_setup_rx();
+
+    testbus_set_speed(speed);
 
     // Make sure WIN = 0
     C1CTRL1bits.WIN = 0;
@@ -89,21 +96,16 @@ ecan_init(struct ecan_adapter *adapter)
     // Select clock source (2*Fp)
     C1CTRL1bits.CANCKS = 1;
 
-    ecan_write_baud_cfg();
-
     C1FCTRL = 0xC001;
 
 	// set buffer 0 as a transmit buffer
     C1TR01CONbits.TXEN0 = 1;
 
     // Set normal mode
-    C1CTRL1bits.REQOP = 0;
-
+    C1CTRL1bits.REQOP = mode;
 	// wait for the mode change to take effect
-    while (C1CTRL1bits.OPMODE != 0);
+    while (C1CTRL1bits.OPMODE != mode);
 
-	dma_setup_tx(adapter);
-	dma_setup_rx(adapter);
 	return 0;
 }
 
@@ -184,31 +186,30 @@ ecan_init(struct ecan_adapter *adapter)
 	return 0;
 }*/
 
-int
-ecan_broadcast(struct ecan_adapter *adapter, struct ecan_message *m)
-{
-	int i;
+#define CAN_Test_Message_INDEX 0
+#define CAN_Test_Message_SID 0x123
+#define CAN_Test_Message_DLC 8
+#define CAN_Test_Message_WORD0 ((0x7FF & CAN_Test_Message_SID) << 2)
+#define CAN_Test_Message_WORD2 (CAN_Test_Message_DLC & 0xF)
 
-	// non-blocking check that buffer 0 is ready
+int
+testbus_publish_CAN_Test_Message(struct CAN_Test_Message_t *m)
+{
+	// check that buffer 0 is ready
     if (C1TR01CONbits.TXREQ0) {
+        // TODO: handle this.
         return 0;
     }
 
 	// clear the non-data words
-	adapter->buffer[0][0] = 0x0;
-	adapter->buffer[0][1] = 0x0;
-	adapter->buffer[0][2] = 0x0;
-	adapter->buffer[0][7] = 0x0;
-
-	// write the identifier
-	adapter->buffer[0][0] |= (m->sid << BUFFER_SID_SHIFT) & BUFFER_SID_MASK;
-	// write the data length code
-	adapter->buffer[0][2] |= m->dlc & 0xF;
+	testbus_buffer[CAN_Test_Message_INDEX][0] = CAN_Test_Message_WORD0;
+	testbus_buffer[CAN_Test_Message_INDEX][1] = 0x0;
+	testbus_buffer[CAN_Test_Message_INDEX][2] = CAN_Test_Message_WORD2;
+	testbus_buffer[CAN_Test_Message_INDEX][7] = 0x0;
 
 	// write the data
-	for (i = 0; i < (m->dlc+1)/2; ++i) {
-		adapter->buffer[0][i+3] = m->data_words[i];
-	}
+    uint16_t *data = &testbus_buffer[CAN_Test_Message_INDEX][3];
+    testbus_pack_CAN_Test_Message(data, m);
 
     // mark buffer for transmission
     C1TR01CONbits.TXREQ0 = 1;
@@ -216,28 +217,38 @@ ecan_broadcast(struct ecan_adapter *adapter, struct ecan_message *m)
 	return 1;
 }
 
+#define CAN_Test_Message_FILTER 8
+
 int
-ecan_read(struct ecan_adapter *adapter, struct ecan_message *m)
+testbus_check_subscriptions(struct testbus_subscriptions_t *subs)
 {
-	int i;
+	int flthit, ret;
 	uint16_t fnrb;
-	void *bp = (void *)CAN1_BASE_ADDRESS;
+    uint16_t *data;
 
     fnrb = C1FIFObits.FNRB;
+	if (read_register_bitset(&C1RXFUL1, fnrb)) {
+        flthit = testbus_buffer[fnrb][7] >> 8;
+        data = &testbus_buffer[fnrb][3];
 
-	if (read_register_bitset(bp + CiRXFULn, fnrb)) {
-		// read the identifier
-		m->sid = (adapter->buffer[fnrb][0] & BUFFER_SID_MASK) >> BUFFER_SID_SHIFT;
-		// read the data length code
-		m->dlc = (uint8_t)(adapter->buffer[fnrb][2] & 0xF);
+        switch (flthit) {
+            case CAN_Test_Message_FILTER:
+                ret = testbus_unpack_CAN_Test_Message(data, &subs->CAN_Test_Message);
+                break;
+            default:
+                ret = 0;
+                break;
+        }
 
-		// read the data
-		for (i = 0; (m->dlc+1)/2; ++i) {
-			m->data_bytes[i] = adapter->buffer[fnrb][i+3];
-		}
+        if (ret) {
+            // TODO: handle message decoding error?
+        }
 
-		// TODO: handle overflow condition (for logging statistics, if nothing else)
-		clear_register_bitset(bp + CiRXFULn, fnrb);
+		// TODO: handle overflow.
+        read_register_bitset(&C1RXOVF1, fnrb);
+
+        // Clear RXFUL bit (bumps FNRB register)
+		clear_register_bitset(&C1RXFUL1, fnrb);
 
 		return 1;
 	}
