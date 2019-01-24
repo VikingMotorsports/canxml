@@ -3,6 +3,7 @@
 #include "mmio.h"
 #include "oscconfig.h"
 #include "testbus_test_a.h"
+#include "serial.h"
 #include <xc.h>
 
 #define DMA_BASE_ADDRESS  0xB00
