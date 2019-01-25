@@ -3,6 +3,12 @@
 #include "testbus_test_a.h"
 #include <xc.h>
 
+#define CAN_Test_Message_INDEX 0
+#define CAN_Test_Message_SID 0x123
+#define CAN_Test_Message_DLC 8
+#define CAN_Test_Message_WORD0 ((0x7FF & CAN_Test_Message_SID) << 2)
+#define CAN_Test_Message_WORD2 (CAN_Test_Message_DLC & 0xF)
+
 ECAN_DECLARE_BUFFER(testbus_buffer)
 
 static int
@@ -41,6 +47,19 @@ testbus_dma_setup_tx()
     DMA1CONbits.CHEN = 1;
 
 	return 0;
+}
+
+static void
+testbus_set_filters()
+{
+    C1RXM0SID = 0x0000;
+    C1RXM0EID = 0;
+
+    C1FEN1bits.FLTEN0 = 1;
+    C1RXF0SID = CAN_Test_Message_SID;
+    C1RXF0EID = 0;
+    C1FMSKSEL1bits.F0MSK = 0;
+    C1BUFPNT1bits.F0BP = 0xF;
 }
 
 static int
@@ -89,6 +108,7 @@ testbus_init(enum ecan_speed speed, enum ecan_mode mode)
 	testbus_dma_setup_rx();
 
     testbus_set_speed(speed);
+    testbus_set_filters();
 
     // Make sure WIN = 0
     C1CTRL1bits.WIN = 0;
@@ -186,12 +206,6 @@ testbus_init(enum ecan_speed speed, enum ecan_mode mode)
 	return 0;
 }*/
 
-#define CAN_Test_Message_INDEX 0
-#define CAN_Test_Message_SID 0x123
-#define CAN_Test_Message_DLC 8
-#define CAN_Test_Message_WORD0 ((0x7FF & CAN_Test_Message_SID) << 2)
-#define CAN_Test_Message_WORD2 (CAN_Test_Message_DLC & 0xF)
-
 int
 testbus_publish_CAN_Test_Message(struct CAN_Test_Message_t *m)
 {
@@ -222,7 +236,7 @@ testbus_publish_CAN_Test_Message(struct CAN_Test_Message_t *m)
 int
 testbus_check_subscriptions(struct testbus_subscriptions_t *subs)
 {
-	int flthit, ret;
+	int flthit;
 	uint16_t fnrb;
     uint16_t *data;
 
@@ -233,15 +247,10 @@ testbus_check_subscriptions(struct testbus_subscriptions_t *subs)
 
         switch (flthit) {
             case CAN_Test_Message_FILTER:
-                ret = testbus_unpack_CAN_Test_Message(data, &subs->CAN_Test_Message);
+                testbus_unpack_CAN_Test_Message(data, &subs->CAN_Test_Message);
                 break;
             default:
-                ret = 0;
                 break;
-        }
-
-        if (ret) {
-            // TODO: handle message decoding error?
         }
 
 		// TODO: handle overflow.

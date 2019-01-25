@@ -6,8 +6,6 @@
 #include "serial.h"
 #include <xc.h>
 
-#define DMA_BASE_ADDRESS  0xB00
-
 // FICD
 #pragma config ICS =      PGD1
 #pragma config JTAGEN =   OFF
@@ -43,6 +41,14 @@
 int
 main()
 {
+    struct CAN_Test_Message_t tm = {
+        .SignalA = 0,
+        .SignalB = 0,
+        .SignalC = 0,
+        .SignalD = 0,
+        .SignalE = 0,
+    }; 
+    
 	osccon_frc30mips();
 
 	// configure I/O pins
@@ -62,6 +68,8 @@ main()
 	ODCBbits.ODCB14 = 0; // normal digital output
 	ODCBbits.ODCB11 = 0; // normal digital output
 
+    testbus_init(ECAN_125KBPS, ECAN_NORMAL);
+
 	// start timer2
 	T2CONbits.TCS = 0;
 	T2CONbits.T32 = 0;
@@ -70,19 +78,12 @@ main()
 	T2CONbits.TCKPS = 0x3;
 	T2CONbits.TON = 1;
 
-    C1RXM0SID = 0x0000;
-    C1RXM0EID = 0;
-
-    C1FEN1bits.FLTEN0 = 1;
-    C1RXF0SID = 0x0000;
-    C1RXF0EID = 0;
-    C1FMSKSEL1bits.F0MSK = 0;
-    C1BUFPNT1bits.F0BP = 0xF;
-
 	for (;;) {
 		TMR2 = 0;
 		while (TMR2 < 58594);
 		LATBbits.LATB0 = ~LATBbits.LATB0;
+        tm.SignalA = LATBbits.LATB0;
+        testbus_publish_CAN_Test_Message(&tm);
 	}
 
 	return 0;

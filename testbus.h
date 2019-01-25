@@ -5,10 +5,14 @@
 #include "ecan.h"
 
 struct CAN_Test_Message_t {
-    int a;
+    uint8_t SignalA;
+    uint16_t SignalB;
+    uint16_t SignalC;
+    uint8_t SignalD;
+    uint32_t SignalE;
 };
 
 void testbus_pack_CAN_Test_Message(uint16_t *data, struct CAN_Test_Message_t *m);
-int testbus_unpack_CAN_Test_Message(uint16_t *data, struct CAN_Test_Message_t *m);
+void testbus_unpack_CAN_Test_Message(uint16_t *data, struct CAN_Test_Message_t *m);
 
 #endif // TESTBUS_H
