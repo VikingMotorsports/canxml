@@ -101,6 +101,7 @@ int main()
 		TMR2 = 0;
 		//while (TMR2 < 58594);
 		while (ecan_read(&can1, &test_rx_message) == 0);
+        ecan_broadcast(&can1, &test_tx_message);
 		LATBbits.LATB0 = ~LATBbits.LATB0;
 	}
 
