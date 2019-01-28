@@ -17,8 +17,8 @@ padding at the end of the message.
 
 -->
 
-<bus name="Test_Bus">
-    <node name="PM100">
+<bus name="testbus">
+    <node name="pm100">
         <publish>
             PM100_Temperatures_1
             PM100_Analog_Input_Voltages
@@ -36,7 +36,7 @@ padding at the end of the message.
         </subscribe>
     </node>
 
-    <node name="Test_A">
+    <node name="test_a">
         <publish>
             PM100_Command_Message
             CAN_Test_Message
@@ -52,7 +52,7 @@ padding at the end of the message.
         </subscribe>
     </node>
 
-    <node name="Test_B">
+    <node name="test_b">
         <publish>
             PM100_Command_Message
             CAN_Test_Message
@@ -83,7 +83,7 @@ padding at the end of the message.
         <signal name="Gate_Driver_Board_Temperature" start="6" len="16" type="uint"/>
     </message>
 
-    <messsage name="PM100_Analog_Input_Voltages" id="0xA3">
+    <message name="PM100_Analog_Input_Voltages" id="0xA3">
         <signal name="Analog_Input_1" sbit="0" len="10" type="uint"/>
         <signal name="Analog_Input_2" sbit="10" len="10" type="uint"/>
         <signal name="Analog_Input_3" sbit="20" len="10" type="uint"/>
@@ -191,7 +191,7 @@ padding at the end of the message.
             <value name="Command_Reverse" value="0"/>
             <value name="Command_Forward" value="1"/>
         </signal>
-        <signal name="PM100_Inverter_Enable" start="5" sbit="0" len="1" type="bool">
+        <signal name="PM100_Inverter_Enable" start="5" sbit="0" len="1" type="bool"/>
         <signal name="Inverter_Discharge" start="5" sbit="1" len="1" type="bool"/>
         <signal name="Speed_Mode_Enable" start="5" sbit="2" len="1" type="bool"/>
         <signal name="Commanded_Torque_Limit" start="6" len="16" type="uint"/>

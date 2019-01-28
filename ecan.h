@@ -5,7 +5,7 @@
 
 #define ECAN_NUM_BUFFERS 16
 #define ECAN_DECLARE_BUFFER(name) uint16_t name[ECAN_NUM_BUFFERS][8] \
-		__attribute__((aligned(ECAN_NUM_BUFFERS * 16)));
+        __attribute__((aligned(ECAN_NUM_BUFFERS * 16)));
 
 enum ecan_speed {
     ECAN_10KBPS,
