@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<!--
+
+Valid Identifiers (to be checked for mistakes by script):
+
+Other Notes:
+
+signals of type "bool" are C booleans, which are really just ints (and therefore could have more than one bit).
+
+The templating script should check for unrecognized identifiers.
+The templating script should check that start <= end.
+
+Should descriptions be elements instead of attributes in some cases?
+
+The "len" attribute of a message is optional. It is intended for cases where signal information is missing or there is
+padding at the end of the message.
+
+-->
+
+<bus name="testbus">
+    <node name="test_a">
+        <publish>
+            CAN_Test_Message
+        </publish>
+
+        <subscribe>
+            CAN_Test_Message
+        </subscribe>
+    </node>
+
+    <message name="CAN_Test_Message" id="0x12">
+        <signal name="SignalA" sbit="1" len="5" type="uint"/>
+        <signal name="SignalB" sbit="6" len="16" type="uint"/>
+        <signal name="SignalC" start="2" sbit="6" len="10" type="uint"/>
+        <signal name="SignalD" start="4" len="8" type="bool"/>
+        <signal name="SignalE" start="5" len="24" type="uint"/>
+    </message>
+</bus>
