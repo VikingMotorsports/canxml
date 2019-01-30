@@ -1,27 +1,24 @@
 #include <stdint.h>
 #include "testbus.h"
 
+#define MASK(n) ((1UL<<(n))-1)
+
 void
-testbus_pack_CAN_Test_Message(uint16_t *data, struct CAN_Test_Message_t *m)
+testbus_pack_CAN_Test_Message(void *data, struct CAN_Test_Message_t *m)
 {
-    data[0] = 0 
-            | ((m->SignalA & 0x1F) << 1)
-            | ((m->SignalB & 0xFFFF) << 6);
-    data[1] = 0
-            | ((m->SignalB & 0xFFFF) >> 10)
-            | ((m->SignalC & 0x3FF) << 6);
-    data[2] = ((m->SignalD & 0xFF) << 0)
-            | ((m->SignalE & 0xFFFFFF) << 8);
-    data[3] = ((m->SignalE & 0xFFFFFF) >> 8);
+    *((uint8_t *)data + 0) = ((uint8_t)m->SignalA & MASK(5)) << 1;
+    *((uint32_t *)data + 0) |= ((uint32_t)m->SignalA) << 6;
+    *((uint16_t *)data + 1) |= ((uint16_t)m->SignalC & MASK(10)) << 6;
+    *((uint8_t *)data + 4) = m->SignalD;
+    *((uint32_t *)data + 1) |= ((uint32_t)m->SignalE & MASK(24)) << 8;
 }
 
 void
-testbus_unpack_CAN_Test_Message(uint16_t *data, struct CAN_Test_Message_t *m)
+testbus_unpack_CAN_Test_Message(void *data, struct CAN_Test_Message_t *m)
 {
-    m->SignalA = (data[0] >> 1) & 0x1F;
-    m->SignalB = ((data[0] >> 6) | (data[1] << 10)) & 0xFFFF;
-    m->SignalC = (data[1] >> 6) & 0x3FF;
-    m->SignalD = (data[2] >> 0) & 0xFF;
-    m->SignalE = ((uint32_t)(data[2] >> 8) | (((uint32_t)data[3]) << 8));
+    m->SignalA = (*((uint8_t *)data + 0) >> 1) & MASK(5);
+    m->SignalB = (*((uint32_t *)data + 0) >> 6);
+    m->SignalC = (*((uint16_t *)data + 1) >> 6) & MASK(10);
+    m->SignalD = *((uint8_t *)data + 4);
+    m->SignalE = (*((uint32_t *)data + 1) >> 8) & MASK(24);
 }
-

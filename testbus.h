@@ -12,7 +12,7 @@ struct CAN_Test_Message_t {
     uint32_t SignalE;
 };
 
-void testbus_pack_CAN_Test_Message(uint16_t *data, struct CAN_Test_Message_t *m);
-void testbus_unpack_CAN_Test_Message(uint16_t *data, struct CAN_Test_Message_t *m);
+void testbus_pack_CAN_Test_Message(void *data, struct CAN_Test_Message_t *m);
+void testbus_unpack_CAN_Test_Message(void *data, struct CAN_Test_Message_t *m);
 
 #endif // TESTBUS_H
