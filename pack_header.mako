@@ -19,8 +19,7 @@ def minimum_size(len):
 #define ${bus_name.upper()}_PACK_H
 
 #include <stdint.h>
-
-#include "${bus_name}.h"
+#include "${bus_name}_messages.h"
 
 #define MASK(n) ((1UL<<(n))-1)
 

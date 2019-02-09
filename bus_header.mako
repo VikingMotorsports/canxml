@@ -1,6 +1,6 @@
-<%bus_name = xmlroot.attrib.get('name').lower()%>
-#ifndef ${bus_name.upper()}_H
-#define ${bus_name.upper()}_H
+<%bus_name = xmlroot.attrib.get('name').lower()%>\
+#ifndef ${bus_name.upper()}_MESSAGES_H
+#define ${bus_name.upper()}_MESSAGES_H
 
 #include <stdint.h>
 
@@ -31,4 +31,4 @@ struct ${message_name}_t {
 };
 % endfor
 
-#endif // ${bus_name.upper()}_H
+#endif // ${bus_name.upper()}_MESSAGES_H

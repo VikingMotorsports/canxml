@@ -16,7 +16,7 @@ def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument('xml_file', help='XML specification of the bus')
     argparser.add_argument('template_file', help='Mako template file')
-    argparser.add_argument('word_size', nargs='?', default=32, help='Machine word size')
+    argparser.add_argument('node_name', nargs='?', default=32, help='Node name')
     args = argparser.parse_args()
 
     xmltree = ET.parse(args.xml_file)
@@ -24,7 +24,7 @@ def main():
 
     bus_template = Template(filename=args.template_file)
     buf = StringIO()
-    ctx = Context(buf, xmlroot = root, wordsize=int(args.word_size))
+    ctx = Context(buf, xmlroot = root, arg_node_name = args.node_name)
     bus_template.render_context(ctx)
     print(buf.getvalue())
 

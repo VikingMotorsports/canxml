@@ -1,5 +1,8 @@
+#ifndef TESTBUS_PACK_H
+#define TESTBUS_PACK_H
+
 #include <stdint.h>
-#include "testbus.h"
+#include "testbus_messages.h"
 
 #define MASK(n) ((1UL<<(n))-1)
 
@@ -22,3 +25,5 @@ testbus_unpack_CAN_Test_Message(void *data, struct CAN_Test_Message_t *m)
     m->SignalD = *((uint8_t *)data + 4);
     m->SignalE = (*((uint32_t *)data + 1) >> 8) & MASK(24);
 }
+
+#endif // TESTBUS_PACK_H
