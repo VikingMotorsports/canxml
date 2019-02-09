@@ -14,7 +14,7 @@ def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument('xml_file', help='XML specification of the bus')
     argparser.add_argument('template_file', help='Mako template file')
-    argparser.add_argument('node_name', nargs='?', default=32, help='Node name')
+    argparser.add_argument('node_name', nargs='?', default=None, help='Node name')
     args = argparser.parse_args()
 
     xmltree = ET.parse(args.xml_file)

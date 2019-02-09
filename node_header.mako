@@ -1,10 +1,13 @@
 <%
+assert(node_name is not None)
 bus_name = xmlroot.attrib.get('name').lower()
+nodefound = False
 for node_element in xmlroot.iter('node'):
     assert(node_element.get('name') is not None)
     if node_element.get('name') == node_name:
         node = node_element
-assert(node is not None)
+        nodefound = True
+assert(nodefound)
 %>\
 #ifndef ${bus_name.upper()}_H
 #define ${bus_name.upper()}_H
