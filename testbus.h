@@ -1,5 +1,5 @@
-#ifndef TESTBUS_TEST_A_H
-#define TESTBUS_TEST_A_H
+#ifndef TESTBUS_H
+#define TESTBUS_H
 
 #include <stdint.h>
 
@@ -17,4 +17,4 @@ int testbus_check_subscriptions(struct testbus_subscriptions_t *);
 
 int testbus_publish_CAN_Test_Message(struct CAN_Test_Message_t *);
 
-#endif // TESTBUS_TEST_A_H
+#endif // TESTBUS_H

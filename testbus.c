@@ -1,6 +1,6 @@
 #include "mmio.h"
 #include "ecan.h"
-#include "testbus_test_a.h"
+#include "testbus.h"
 #include <xc.h>
 
 #define CAN_Test_Message_INDEX 0
