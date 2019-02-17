@@ -2,7 +2,7 @@
 
 #include "mmio.h"
 #include "oscconfig.h"
-#include "testbus_test_a.h"
+#include "testbus.h"
 #include "serial.h"
 #include <xc.h>
 

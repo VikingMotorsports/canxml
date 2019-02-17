@@ -1,13 +1,7 @@
 #include "mmio.h"
-#include "ecan.h"
 #include "testbus.h"
+#include "testbus_pack.h"
 #include <xc.h>
-
-#define CAN_Test_Message_INDEX 0
-#define CAN_Test_Message_SID 0x123
-#define CAN_Test_Message_DLC 8
-#define CAN_Test_Message_WORD0 ((0x7FF & CAN_Test_Message_SID) << 2)
-#define CAN_Test_Message_WORD2 (CAN_Test_Message_DLC & 0xF)
 
 ECAN_DECLARE_BUFFER(testbus_buffer)
 
@@ -129,82 +123,9 @@ testbus_init(enum ecan_speed speed, enum ecan_mode mode)
     return 0;
 }
 
-/*int ecan_set_filter(struct ecan_adapter *adapter, int n, uint16_t id, int m)
-{
-    int shift;
-
-    void *bp; // ecan module base pointer
-
-    // local register copies
-    uint16_t msksel_reg; // mask selection register
-    uint16_t fbp_reg; // filter buffer pointer register
-    uint16_t fen_reg; // filter enable register pointer
-
-    // register pointers
-    void *sid_reg_ptr;
-    void *msksel_reg_ptr;
-    void *fbp_reg_ptr;
-    void *fen_reg_ptr;
-
-    // find pointer addresses
-    bp = (void *)adapter->ecan_base;
-    sid_reg_ptr = bp + CiRXFnID + (n << 2);
-    msksel_reg_ptr = bp + CiFMSKSELn + ((n >> 3) << 1);
-    fbp_reg_ptr = bp + CiBUFPNTn + ((n >> 2) << 1);
-    fen_reg_ptr = bp + CiFEN1;
-
-    // set WIN=1
-    C1CTRL1bits.WIN = 1;
-
-    // read, modify, write each register
-    
-    writew(id << CiRXnSID_SID_SHIFT, sid_reg_ptr);  
-    writew(0x0, sid_reg_ptr+2); // zero the EID register
-
-    msksel_reg = readw(msksel_reg_ptr);
-    shift = (n & 0x7) << 1;
-    msksel_reg = (msksel_reg & ~(0x3U << shift)) | (m << shift);
-    writew(msksel_reg, msksel_reg_ptr);
-
-    fbp_reg = readw(fbp_reg_ptr);
-    shift = (n & 0x3) << 2;
-    // no need to zero the field, since we are always setting it to 0xF for FIFO
-    fbp_reg |= (0xF << shift);
-    writew(fbp_reg, fbp_reg_ptr);
-
-    fen_reg = readw(fen_reg_ptr);
-    fen_reg |= BIT(n);
-    writew(fen_reg, fen_reg_ptr);
-
-    // set WIN=0
-    C1CTRL1bits.WIN = 0;
-    
-    return 0;
-}*/
-
-/*int ecan_set_mask(struct ecan_adapter *adapter, int m, uint16_t id_mask)
-{
-    void *bp; // ecan module base pointer
-
-    // register pointer
-    void *sid_reg_ptr;
-
-    // find pointer address
-    bp = (void*)adapter->ecan_base;
-    sid_reg_ptr = bp + CiRXMnID + (m << 2);
-
-    // set WIN=1
-    C1CTRL1bits.WIN = 1;
-
-    // write the mask
-    writew((id_mask << CiRXnSID_SID_SHIFT) & CiRXnSID_SID_MASK, sid_reg_ptr);   
-    writew(0x0, sid_reg_ptr+2); // zero the EID register
-
-    // set WIN=0
-    C1CTRL1bits.WIN = 0;
-
-    return 0;
-}*/
+#define CAN_Test_Message_INDEX 0
+#define CAN_Test_Message_WORD0 ((0x7FF & CAN_Test_Message_SID) << 2)
+#define CAN_Test_Message_WORD2 (CAN_Test_Message_DLC & 0xF)
 
 int
 testbus_publish_CAN_Test_Message(struct CAN_Test_Message_t *m)

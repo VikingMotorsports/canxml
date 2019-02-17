@@ -2,8 +2,8 @@
 #define TESTBUS_H
 
 #include <stdint.h>
-
-#include "testbus.h"
+#include "ecan.h"
+#include "testbus_messages.h"
 
 extern uint16_t testbus_buffer[][8];
 

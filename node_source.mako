@@ -1,18 +1,16 @@
+<%
+assert(len(node.subscribes) <= 16)
+assert(len(node.publishes) <= 8)
+%>\
 #include "mmio.h"
-#include "ecan.h"
-#include "testbus.h"
+#include "${bus_name}.h"
+#include "${bus_name}_pack.h"
 #include <xc.h>
 
-#define CAN_Test_Message_INDEX 0
-#define CAN_Test_Message_SID 0x123
-#define CAN_Test_Message_DLC 8
-#define CAN_Test_Message_WORD0 ((0x7FF & CAN_Test_Message_SID) << 2)
-#define CAN_Test_Message_WORD2 (CAN_Test_Message_DLC & 0xF)
-
-ECAN_DECLARE_BUFFER(testbus_buffer)
+ECAN_DECLARE_BUFFER(${bus_name}_buffer)
 
 static int
-testbus_dma_setup_rx()
+${bus_name}_dma_setup_rx()
 {
     // Disable channel and start configuration
     DMA0CON = 0 | (0x2 << 4);
@@ -21,7 +19,7 @@ testbus_dma_setup_rx()
     DMA0REQ = 34;
     DMA0CNT = 7;
     DMA0PAD = (uint16_t)(&C1RXD);
-    DMA0STAL = (uint16_t)testbus_buffer;
+    DMA0STAL = (uint16_t)${bus_name}_buffer;
     DMA0STAH = 0;
 
     // Enable channel 
@@ -31,7 +29,7 @@ testbus_dma_setup_rx()
 }
 
 static int
-testbus_dma_setup_tx()
+${bus_name}_dma_setup_tx()
 {
     // Disable channel and start configuration
     DMA1CON = 0 | (0x2 << 4) | (1 << 13);
@@ -40,7 +38,7 @@ testbus_dma_setup_tx()
     DMA1REQ = 70;
     DMA1CNT = 7;
     DMA1PAD = (uint16_t)(&C1TXD);
-    DMA1STAL = (uint16_t)testbus_buffer;
+    DMA1STAL = (uint16_t)${bus_name}_buffer;
     DMA1STAH = 0;
 
     // Enable channel 
@@ -50,20 +48,22 @@ testbus_dma_setup_tx()
 }
 
 static void
-testbus_set_filters()
+${bus_name}_set_filters()
 {
     C1RXM0SID = 0x0000;
     C1RXM0EID = 0;
+% for message in node.subscribes:
 
-    C1FEN1bits.FLTEN0 = 1;
-    C1RXF0SID = CAN_Test_Message_SID;
-    C1RXF0EID = 0;
-    C1FMSKSEL1bits.F0MSK = 0;
-    C1BUFPNT1bits.F0BP = 0xF;
+    C1FEN1bits.FLTEN${loop.index} = 1;
+    C1RXF${loop.index}SID = ${message.name}_SID;
+    C1RXF${loop.index}EID = 0;
+    C1FMSKSEL${1+loop.index//8}bits.F${loop.index}MSK = 0;
+    C1BUFPNT${1+loop.index//4}bits.F${loop.index}BP = 0xF;
+% endfor
 }
 
 static int
-testbus_set_speed(enum ecan_speed cfg)
+${bus_name}_set_speed(enum ecan_speed cfg)
 {
     // using 10 time quanta per bit
     // synchronization segment is 1TQ
@@ -96,7 +96,7 @@ testbus_set_speed(enum ecan_speed cfg)
 }
 
 int
-testbus_init(enum ecan_speed speed, enum ecan_mode mode)
+${bus_name}_init(enum ecan_speed speed, enum ecan_mode mode)
 {
     // set configuration mode
     C1CTRL1bits.REQOP = ECAN_CONFIG;
@@ -104,11 +104,11 @@ testbus_init(enum ecan_speed speed, enum ecan_mode mode)
     while (C1CTRL1bits.OPMODE != ECAN_CONFIG);
 
     // Configure DMA channels to match
-    testbus_dma_setup_tx();
-    testbus_dma_setup_rx();
+    ${bus_name}_dma_setup_tx();
+    ${bus_name}_dma_setup_rx();
 
-    testbus_set_speed(speed);
-    testbus_set_filters();
+    ${bus_name}_set_speed(speed);
+    ${bus_name}_set_filters();
 
     // Make sure WIN = 0
     C1CTRL1bits.WIN = 0;
@@ -116,10 +116,16 @@ testbus_init(enum ecan_speed speed, enum ecan_mode mode)
     // Select clock source (2*Fp)
     C1CTRL1bits.CANCKS = 1;
 
-    C1FCTRL = 0xC001;
+    C1FCTRL = 0xC008;
 
-    // set buffer 0 as a transmit buffer
-    C1TR01CONbits.TXEN0 = 1;
+    // enable transmit buffers
+% for message in node.publishes:
+<%
+m = (loop.index//2)*2
+n = m + 1
+%>\
+    C1TR${m}${n}CONbits.TXEN${loop.index} = 1;
+% endfor
 
     // Set normal mode
     C1CTRL1bits.REQOP = mode;
@@ -129,112 +135,47 @@ testbus_init(enum ecan_speed speed, enum ecan_mode mode)
     return 0;
 }
 
-/*int ecan_set_filter(struct ecan_adapter *adapter, int n, uint16_t id, int m)
-{
-    int shift;
-
-    void *bp; // ecan module base pointer
-
-    // local register copies
-    uint16_t msksel_reg; // mask selection register
-    uint16_t fbp_reg; // filter buffer pointer register
-    uint16_t fen_reg; // filter enable register pointer
-
-    // register pointers
-    void *sid_reg_ptr;
-    void *msksel_reg_ptr;
-    void *fbp_reg_ptr;
-    void *fen_reg_ptr;
-
-    // find pointer addresses
-    bp = (void *)adapter->ecan_base;
-    sid_reg_ptr = bp + CiRXFnID + (n << 2);
-    msksel_reg_ptr = bp + CiFMSKSELn + ((n >> 3) << 1);
-    fbp_reg_ptr = bp + CiBUFPNTn + ((n >> 2) << 1);
-    fen_reg_ptr = bp + CiFEN1;
-
-    // set WIN=1
-    C1CTRL1bits.WIN = 1;
-
-    // read, modify, write each register
-    
-    writew(id << CiRXnSID_SID_SHIFT, sid_reg_ptr);  
-    writew(0x0, sid_reg_ptr+2); // zero the EID register
-
-    msksel_reg = readw(msksel_reg_ptr);
-    shift = (n & 0x7) << 1;
-    msksel_reg = (msksel_reg & ~(0x3U << shift)) | (m << shift);
-    writew(msksel_reg, msksel_reg_ptr);
-
-    fbp_reg = readw(fbp_reg_ptr);
-    shift = (n & 0x3) << 2;
-    // no need to zero the field, since we are always setting it to 0xF for FIFO
-    fbp_reg |= (0xF << shift);
-    writew(fbp_reg, fbp_reg_ptr);
-
-    fen_reg = readw(fen_reg_ptr);
-    fen_reg |= BIT(n);
-    writew(fen_reg, fen_reg_ptr);
-
-    // set WIN=0
-    C1CTRL1bits.WIN = 0;
-    
-    return 0;
-}*/
-
-/*int ecan_set_mask(struct ecan_adapter *adapter, int m, uint16_t id_mask)
-{
-    void *bp; // ecan module base pointer
-
-    // register pointer
-    void *sid_reg_ptr;
-
-    // find pointer address
-    bp = (void*)adapter->ecan_base;
-    sid_reg_ptr = bp + CiRXMnID + (m << 2);
-
-    // set WIN=1
-    C1CTRL1bits.WIN = 1;
-
-    // write the mask
-    writew((id_mask << CiRXnSID_SID_SHIFT) & CiRXnSID_SID_MASK, sid_reg_ptr);   
-    writew(0x0, sid_reg_ptr+2); // zero the EID register
-
-    // set WIN=0
-    C1CTRL1bits.WIN = 0;
-
-    return 0;
-}*/
+% for message in node.publishes:
+<%
+m = (loop.index//2)*2
+n = m + 1
+%>\
+#define ${message.name}_INDEX ${loop.index}
+#define ${message.name}_WORD0 ((0x7FF & ${message.name}_SID) << 2)
+#define ${message.name}_WORD2 (${message.name}_DLC & 0xF)
 
 int
-testbus_publish_CAN_Test_Message(struct CAN_Test_Message_t *m)
+${bus_name}_publish_${message.name}(struct ${message.name}_t *m)
 {
     // check that buffer 0 is ready
-    if (C1TR01CONbits.TXREQ0) {
+    if (C1TR${m}${n}CONbits.TXREQ${loop.index}) {
         // TODO: handle this.
         return 0;
     }
 
     // clear the non-data words
-    testbus_buffer[CAN_Test_Message_INDEX][0] = CAN_Test_Message_WORD0;
-    testbus_buffer[CAN_Test_Message_INDEX][1] = 0x0;
-    testbus_buffer[CAN_Test_Message_INDEX][2] = CAN_Test_Message_WORD2;
-    testbus_buffer[CAN_Test_Message_INDEX][7] = 0x0;
+    ${bus_name}_buffer[${message.name}_INDEX][0] = ${message.name}_WORD0;
+    ${bus_name}_buffer[${message.name}_INDEX][1] = 0x0;
+    ${bus_name}_buffer[${message.name}_INDEX][2] = ${message.name}_WORD2;
+    ${bus_name}_buffer[${message.name}_INDEX][7] = 0x0;
 
     // write the data
-    uint16_t *data = &testbus_buffer[CAN_Test_Message_INDEX][3];
-    testbus_pack_CAN_Test_Message(data, m);
+    uint16_t *data = &${bus_name}_buffer[${message.name}_INDEX][3];
+    ${bus_name}_pack_${message.name}(data, m);
 
     // mark buffer for transmission
-    C1TR01CONbits.TXREQ0 = 1;
+    C1TR${m}${n}CONbits.TXREQ${loop.index} = 1;
 
     return 1;
 }
+% endfor
 
-#define CAN_Test_Message_FILTER 8
+% for message in node.subscribes:
+#define ${message.name}_FILTER ${loop.index}
+% endfor
 
 int
-testbus_check_subscriptions(struct testbus_subscriptions_t *subs)
+${bus_name}_check_subscriptions(struct ${bus_name}_subscriptions_t *subs)
 {
     int flthit;
     uint16_t fnrb;
@@ -242,13 +183,15 @@ testbus_check_subscriptions(struct testbus_subscriptions_t *subs)
 
     fnrb = C1FIFObits.FNRB;
     if (read_register_bitset(&C1RXFUL1, fnrb)) {
-        flthit = testbus_buffer[fnrb][7] >> 8;
-        data = &testbus_buffer[fnrb][3];
+        flthit = ${bus_name}_buffer[fnrb][7] >> 8;
+        data = &${bus_name}_buffer[fnrb][3];
 
         switch (flthit) {
-            case CAN_Test_Message_FILTER:
-                testbus_unpack_CAN_Test_Message(data, &subs->CAN_Test_Message);
+% for message in node.subscribes:
+            case ${message.name}_FILTER:
+                ${bus_name}_unpack_${message.name}(data, &subs->${message.name});
                 break;
+% endfor
             default:
                 break;
         }

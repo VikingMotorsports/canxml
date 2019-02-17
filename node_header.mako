@@ -1,31 +1,26 @@
 <%
-assert(node_name is not None)
-bus_name = xmlroot.attrib.get('name').lower()
-nodefound = False
-for node_element in xmlroot.iter('node'):
-    assert(node_element.get('name') is not None)
-    if node_element.get('name') == node_name:
-        node = node_element
-        nodefound = True
-assert(nodefound)
+assert(node is not None)
 %>\
 #ifndef ${bus_name.upper()}_H
 #define ${bus_name.upper()}_H
 
 #include <stdint.h>
-
-#include "${bus_name}.h"
+#include "${bus_name}_messages.h"
 
 extern uint16_t ${bus_name}_buffer[][8];
 
 struct ${bus_name}_subscriptions_t {
-    struct CAN_Test_Message_t CAN_Test_Message;
+% for message in node.subscribes:
+    struct ${message.name}_t ${message.name};
+% endfor
 };
 
 int ${bus_name}_init(enum ecan_speed, enum ecan_mode);
 
 int ${bus_name}_check_subscriptions(struct ${bus_name}_subscriptions_t *);
+% for message in node.publishes:
 
-int ${bus_name}_publish_CAN_Test_Message(struct CAN_Test_Message_t *);
+int ${bus_name}_publish_${message.name}(struct ${message.name}_t *);
+% endfor
 
 #endif // ${bus_name.upper()}_H

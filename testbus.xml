@@ -27,12 +27,12 @@ padding at the end of the message.
             PM100_Internal_States
             PM100_Fault_Codes
             PM100_Firmware_Information
+            PM100_Read_Write_Parameter_Response
         </publish>
 
         <subscribe>
             PM100_Command_Message
             PM100_Read_Write_Parameter_Command
-            PM100_Read_Write_Parameter_Response
         </subscribe>
     </node>
 
