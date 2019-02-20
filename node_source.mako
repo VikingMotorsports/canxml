@@ -50,6 +50,8 @@ ${bus_name}_dma_setup_tx()
 static void
 ${bus_name}_set_filters()
 {
+    C1CTRL1bits.WIN = 1;
+
     C1RXM0SID = 0x0000;
     C1RXM0EID = 0;
 % for message in node.subscribes:
@@ -60,6 +62,8 @@ ${bus_name}_set_filters()
     C1FMSKSEL${1+loop.index//8}bits.F${loop.index}MSK = 0;
     C1BUFPNT${1+loop.index//4}bits.F${loop.index}BP = 0xF;
 % endfor
+
+    C1CTRL1bits.WIN = 0;
 }
 
 static int
@@ -116,7 +120,7 @@ ${bus_name}_init(enum ecan_speed speed, enum ecan_mode mode)
     // Select clock source (2*Fp)
     C1CTRL1bits.CANCKS = 1;
 
-    C1FCTRL = 0xC008;
+    C1FCTRL = 0x8008;
 
     // enable transmit buffers
 % for message in node.publishes:

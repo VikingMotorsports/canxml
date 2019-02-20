@@ -5,6 +5,7 @@ assert(node is not None)
 #define ${bus_name.upper()}_H
 
 #include <stdint.h>
+#include "ecan.h"
 #include "${bus_name}_messages.h"
 
 extern uint16_t ${bus_name}_buffer[][8];
