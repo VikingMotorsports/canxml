@@ -2,7 +2,7 @@
 
 #include "mmio.h"
 #include "oscconfig.h"
-#include "testbus.h"
+#include "minimal.h"
 #include "serial.h"
 #include <xc.h>
 
@@ -41,13 +41,15 @@
 int
 main()
 {
-    struct CAN_Test_Message_t tm = {
+    struct CAN_Test_Message2_t tm = {
         .SignalA = 0,
         .SignalB = 0,
         .SignalC = 0,
         .SignalD = 0,
         .SignalE = 0,
+        .SignalF = 0,
     }; 
+    struct minimal_subscriptions_t ms;
     
     osccon_frc30mips();
 
@@ -68,7 +70,7 @@ main()
     ODCBbits.ODCB14 = 0; // normal digital output
     ODCBbits.ODCB11 = 0; // normal digital output
 
-    testbus_init(ECAN_125KBPS, ECAN_NORMAL);
+    minimal_init(ECAN_125KBPS, ECAN_NORMAL);
 
     // start timer2
     T2CONbits.TCS = 0;
@@ -78,13 +80,31 @@ main()
     T2CONbits.TCKPS = 0x3;
     T2CONbits.TON = 1;
 
+    //IEC2bits.C1IE = 1;
+    //C1INTEbits.RBIE = 1;
+
+    LATBbits.LATB0 = 0;
+
     for (;;) {
         TMR2 = 0;
         while (TMR2 < 58594);
-        LATBbits.LATB0 = ~LATBbits.LATB0;
-        tm.SignalA = LATBbits.LATB0;
-        testbus_publish_CAN_Test_Message(&tm);
+        minimal_check_subscriptions(&ms);
+        LATBbits.LATB0 = ms.CAN_Test_Message2.SignalC & 0x1;
+        tm.SignalC = !tm.SignalC;
+        minimal_publish_CAN_Test_Message2(&tm);
     }
 
     return 0;
 }
+
+/*
+void __attribute__ ( (interrupt, no_auto_psv) ) _C1Interrupt( void )
+{
+    IFS2bits.C1IF = 0;      // clear interrupt flag
+    if( C1INTFbits.RBIF )
+    {
+        LATBbits.LATB0 = C1FIFObits.FNRB & 0x1;
+        C1INTFbits.RBIF = 0;
+    }
+}
+*/
