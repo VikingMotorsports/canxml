@@ -1,6 +1,10 @@
 <%
-assert(len(node.subscribes) <= 16)
-assert(len(node.publishes) <= 8)
+if not node:
+    raise ValueError('Node must be specified to generate node source')
+if len(node.subscribes) > 16:
+    raise ValueError('dsPIC driver cannot subscribe to more than 16 messages')
+if len(node.publishes) > 8:
+    raise ValueError('dsPIC driver cannot publish more than 8 messages')
 %>\
 #include "mmio.h"
 #include "${bus_name}.h"

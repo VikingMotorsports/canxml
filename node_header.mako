@@ -1,5 +1,6 @@
 <%
-assert(node is not None)
+if not node:
+    raise ValueError('Node must be specified to generate node source')
 %>\
 #ifndef ${bus_name.upper()}_H
 #define ${bus_name.upper()}_H

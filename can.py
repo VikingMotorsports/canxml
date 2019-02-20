@@ -2,7 +2,9 @@ import argparse
 import xml.etree.ElementTree as ET
 from mako.template import Template
 from mako.runtime import Context
+from mako import exceptions
 from StringIO import StringIO
+
 
 # Possible output files;
 # <busname>.h : Node-specific driver header
@@ -76,10 +78,14 @@ class Node:
         self.subscribes.sort(key=lambda m: m.id);
 
 def main():
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument('xml_file', help='XML specification of the bus')
-    argparser.add_argument('template_file', help='Mako template file')
-    argparser.add_argument('node_name', nargs='?', default=None, help='Node name')
+    argparser = argparse.ArgumentParser(description='CAN driver auto-generation script.' )
+    argparser.add_argument('template_file', help='Template file')
+    argparser.add_argument('-s', '--spec', dest='xml_file', required=True,
+                           help='Filename of the XML bus specification')
+    argparser.add_argument('-n', '--node', dest='node_name', 
+                           help='Name of the node for which to generate code')
+    argparser.add_argument('-o', '--out', dest='output', type=argparse.FileType('w'),
+                           help='Output file name')
     args = argparser.parse_args()
 
     xml_tree = ET.parse(args.xml_file)
@@ -93,22 +99,30 @@ def main():
         nodes.append(Node(xml_node, messages))
 
     node = None
-    if args.node_name != None:
+    if args.node_name:
         for n in nodes:
             if n.name == args.node_name:
                 node = n
 
     bus_name = root.attrib.get('name').lower()
 
-    bus_template = Template(filename=args.template_file)
-    buf = StringIO()
+    if not args.output:
+        buf = StringIO()
+    else:
+        buf = args.output
     ctx = Context(buf,
                   xml_root = root,
                   node = node,
                   bus_name = bus_name,
                   messages = messages)
-    bus_template.render_context(ctx)
-    print(buf.getvalue())
+    try:
+        bus_template = Template(filename=args.template_file)
+        bus_template.render_context(ctx)
+    except:
+        print exceptions.text_error_template().render()
+
+    if not args.output:
+        print buf.getvalue()
 
 if __name__ == "__main__":
     main()
